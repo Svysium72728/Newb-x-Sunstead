@@ -142,22 +142,93 @@ vec4 renderClouds(vec2 p, float t, float rain, vec3 horizonCol, vec3 zenithCol, 
   return col;
 }
 
+highp float cloud4Hash1(highp float u) {
+  return fract(sin(u)*43758.5453);
+}
+
+highp float cloud4Hash2(highp vec2 p) {
+  return fract(cos(p.x + p.y*200.0)*256.552);
+}
+
+highp float cloud4Noise(vec2 x) {
+  vec2 p = floor(x);
+  vec2 f = fract(x);
+  f = f*f*(3.0 - 2.0*f);
+  float n = dot(p, vec2(1.0, 57.0));
+  return mix(
+    mix(cloud4Hash1(n), cloud4Hash1(n + 1.0), f.x),
+    mix(cloud4Hash1(n + 57.0), cloud4Hash1(n + 58.0), f.x),
+    f.y
+  );
+}
+
+float cloud4Fbm(vec2 x, float amp) {
+  float v = 0.0;
+  float amplitude = 0.5;
+  vec2 shift = vec2(100.0, 100.0);
+  for (int i = 0; i < 2; ++i) {
+    v += amplitude*cloud4Noise(x);
+    x = x*2.0/amp + shift;
+    amplitude *= 0.5;
+  }
+  return v;
+}
+
+float cloud4Density(vec2 uv) {
+  float a = 0.0;
+  float dither = pow(cloud4Hash2(floor(uv*2480.0)) + 0.35, 0.008);
+  uv *= 5.0;
+  for (int i = 0; i < NL_CLOUD4_LAYERS; i++) {
+    uv /= 1.01;
+    float c = smoothstep(0.35, 0.45, cloud4Fbm(uv, dither));
+    a = mix(a, 1.0, c);
+  }
+  float s = smoothstep(0.0, 1.5, cloud4Fbm(uv, pow(dither, 6.0)) + 0.8);
+  a -= pow(s, 1.5)*0.7;
+  return a;
+}
+
+vec4 renderClouds4(vec2 p, float t, float rain, vec3 horizonCol, vec3 zenithCol) {
+  p = p*NL_CLOUD4_SCALE;
+  p.x += t*NL_CLOUD4_SPEED;
+
+  float d = cloud4Density(p);
+  float a = clamp(1.2*d*(1.0 + 0.5*rain), 0.0, 1.0);
+
+  vec3 base = horizonCol + zenithCol;
+  vec3 col = mix(vec3_splat(luminance(base)), base, NL_CLOUD4_SATURATION);
+  col *= 1.25 - 0.45*a;
+  col *= 1.0 - 0.7*rain;
+
+  return vec4(col, a);
+}
+
 // aurora is rendered on clouds layer
 #ifdef NL_AURORA
 vec4 renderAurora(vec3 p, float t, float rain, float dayFactor) {
   t *= NL_AURORA_VELOCITY;
-  p.xz *= NL_AURORA_SCALE;
-  p.xz += 0.05*sin(p.x*4.0 + 20.0*t);
+  vec2 q = p.xz*NL_AURORA_SCALE;
+  q.x += 2.2*sin(0.23*q.y + 3.0*t) + 1.2*sin(0.51*q.y - 2.0*t);
+  q.y += 1.5*sin(0.19*q.x - 2.0*t);
 
-  float d0 = sin(p.x*0.1 + t + sin(p.z*0.2));
-  float d1 = sin(p.z*0.1 - t + sin(p.x*0.2));
-  float d2 = sin(p.z*0.1 + 1.0*sin(d0 + d1*2.0) + d1*2.0 + d0*1.0);
-  d0 *= d0; d1 *= d1; d2 *= d2;
-  d2 = d0/(1.0 + d2/NL_AURORA_WIDTH);
+  float w = 0.13*q.x + 0.9*sin(0.17*q.y + 2.0*t);
+  float f = fract(w);
+
+  float curtain = smoothstep(0.0, 0.22, f)*(1.0 - f);
+  curtain = pow(curtain, 2.2);
+
+  float cover = smoothstep(-0.2, 1.1, sin(0.12*q.y + 0.5*t) + sin(0.08*q.x - 0.7*t));
+
+  float rays = 0.45 + 1.1*noise1D(3.0*q.y + 6.0*t);
+  rays += (1.0 - rays)*0.4*f;
+
+  vec3 col = mix(NL_AURORA_COL1, NL_AURORA_COL2, smoothstep(0.1, 0.9, f));
+  col += vec3(0.2, 0.3, 0.3)*curtain*curtain;
 
   float mask = max(-dayFactor, 0.0);
-  mask *= mask*(1.0-0.8*rain);
-  return vec4(NL_AURORA*mix(NL_AURORA_COL1,NL_AURORA_COL2,d1),1.0)*d2*mask;
+  mask *= mask*(1.0 - 0.8*rain);
+
+  return vec4(NL_AURORA*col, 1.0)*(1.8*curtain*rays*cover*mask);
 }
 #endif
 
