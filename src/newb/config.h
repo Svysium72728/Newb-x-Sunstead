@@ -29,16 +29,16 @@
 
 /* Color correction */
 #define NL_TONEMAP_TYPE 3              // 1:Exponential, 2:Reinhard, 3:Extended Reinhard, 4:ACES
-#define NL_GAMMA 1.33                  // 0.3 low ~ 2.0 high
-#define NL_EXPOSURE 0.9              // [toggle] 0.5 dark ~ 3.0 bright
-#define NL_SATURATION 0.88            // [toggle] 0.0 grayscale ~ 4.0 super saturated
+#define NL_GAMMA 1.6                  // 0.3 low ~ 2.0 high
+#define NL_EXPOSURE 1.1              // [toggle] 0.5 dark ~ 3.0 bright
+#define NL_SATURATION 0.80            // [toggle] 0.0 grayscale ~ 4.0 super saturated
 #define NL_AMBIENT_SATURATION 0.5
 //#define NL_TINT                      // [toggle] enable light/dark tone tinting
 #define NL_TINT_LOW  vec3(0.3,0.5,1.4) // color tint for dark tone
 #define NL_TINT_HIGH vec3(1.4,0.7,0.3) // color tint for light tone
 
 /* Lighting */
-#define NL_SUNLIGHT_INTENSITY   2.7  // 1.0 weak ~ 5.0 bright
+#define NL_SUNLIGHT_INTENSITY   3.2  // 1.0 weak ~ 5.0 bright
 #define NL_TORCHLIGHT_INTENSITY 1.7  // 0.5 weak ~ 3.0 bright
 #define NL_SHADOW_INTENSITY     0.7  // 0.0 no shadow ~ 1.0 strong shadow
 #define NL_MIN_LIGHTING_BOOST   1.5  // 1.0 minimal lighting boost for dark areas ~ 3.0 brighter dark areas
@@ -123,7 +123,12 @@
 #define NL_UNDERWATER_TINT vec3(0.9,1.0,0.9) // fog tint color when underwater
 
 /* Cloud type */
-#define NL_CLOUD_TYPE 1 // 0:vanilla, 1:soft, 2:rounded, 3:realistic
+#define NL_CLOUD_TYPE 4 // 0:vanilla, 1:soft, 2:rounded, 3:realistic, 4:layered
+
+#define NL_CLOUD4_LAYERS 10
+#define NL_CLOUD4_SCALE vec2(0.04, 0.04)
+#define NL_CLOUD4_SPEED 0.004
+#define NL_CLOUD4_SATURATION 0.35
 
 /* Vanilla cloud settings - make sure to remove clouds.png when using this */
 #define NL_CLOUD0_THICKNESS 2.1      // 0.5 slim ~ 8.0 fat
